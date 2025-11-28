@@ -1,4 +1,4 @@
-"""A simple Streamlit frontend for the LangGraph chatbot."""
+"""A simple Streamlit frontend for the LangGraph chatbot with streaming responses."""
 
 import streamlit as st
 from langgraph_backend import chatbot
@@ -27,14 +27,16 @@ if user_input:
     with st.chat_message("user"):
         st.text(user_input)
 
-    response = chatbot.invoke(
-        {"messages": [HumanMessage(content=user_input)]}, config=CONFIG
-    )
+    with st.chat_message("assistant"):
+        ai_message = st.write_stream(
+            message_chunk.content
+            for message_chunk, metadate in chatbot.stream(
+                {"messages": [HumanMessage(content=user_input)]},
+                config=CONFIG,
+                stream_mode="messages",
+            )
+        )
 
-    ai_message = response["messages"][-1].content
-    # first add the message to message_history
     st.session_state["message_history"].append(
         {"role": "assistant", "content": ai_message}
     )
-    with st.chat_message("assistant"):
-        st.text(ai_message)
